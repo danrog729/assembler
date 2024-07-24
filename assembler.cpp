@@ -184,6 +184,16 @@ int main(int argc, char* argv[])
         }
     }
 
+    /*printf("%s\n", assembly);
+    for (int character = 0; character < fileSize; character++)
+    {
+        if (character % 16 == 0)
+        {
+            printf("\n");
+        }
+        printf("%02x ", assembly[character] & 0xff);
+    }*/
+
     printf("Removed comments and whitespace.\n");
 
     // add constants and labels into the symbol table
@@ -193,10 +203,10 @@ int main(int argc, char* argv[])
     int lineNumber = 1;
     int byteIndex = 0;
     // loop through each character in the array
-    for (int index = 0; index < fileSize; index++)
+    for (int index = 0; index <= fileSize; index++)
     {
         // if its a linebreak or the end of the string
-        if (assembly[index] == 0x0a || assembly[index] == '\0')
+        if (index == fileSize || assembly[index] == 0x0a || assembly[index] == '\0')
         {
             endOfLine = index;
 
@@ -224,14 +234,14 @@ int main(int argc, char* argv[])
                     int wordEnd = 0;
                     int wordCount = 0;
                     char inWord = 0;
-                    for (int wordIndex = startOfLine + 6; wordIndex < endOfLine + 1; wordIndex++)
+                    for (int wordIndex = startOfLine + 6; wordIndex <= endOfLine; wordIndex++)
                     {
                         if (assembly[wordIndex] != ' ' && inWord == 0)
                         {
                             wordStart = wordIndex;
                             inWord = 1;
                         }
-                        else if ((assembly[wordIndex] == ' ' || assembly[wordIndex] == 0x0a) && inWord == 1)
+                        else if ((wordIndex == endOfLine || assembly[wordIndex] == ' ' || assembly[wordIndex] == 0x0a) && inWord == 1)
                         {
                             wordEnd = wordIndex;
                             inWord = 0;
@@ -353,7 +363,7 @@ int main(int argc, char* argv[])
                 }
             }
 
-            if (assembly[index] == '\0')
+            if (index == fileSize || assembly[index] == '\0')
             {
                 break;
             }
@@ -501,26 +511,26 @@ int main(int argc, char* argv[])
 
     //// print the output
 
-    //for (int character = 0; character < fileSize; character++)
-    //{
-    //    if (character % 16 == 0)
-    //    {
-    //        printf("\n");
-    //    }
-    //    printf("%02x ", assembly[character] & 0xff);
-    //}
-    //for (int character = 0; character < 256; character++)
-    //{
-    //    if (character % 16 == 0)
-    //    {
-    //        printf("\n");
-    //    }
-    //    printf("%02x ", program[character] & 0xff);
-    //}
-    //printf("\n");
-    //print_symbol_table_8(symbolTable);
-    //printf("\n");
-    //printf("%s", assembly);
+    /*for (int character = 0; character < fileSize; character++)
+    {
+        if (character % 16 == 0)
+        {
+            printf("\n");
+        }
+        printf("%02x ", assembly[character] & 0xff);
+    }
+    for (int character = 0; character < 256; character++)
+    {
+        if (character % 16 == 0)
+        {
+            printf("\n");
+        }
+        printf("%02x ", program[character] & 0xff);
+    }
+    printf("\n");
+    print_symbol_table_8(symbolTable);
+    printf("\n");
+    printf("%s", assembly);*/
 
     free(assembly);
     fclose(file);
@@ -686,24 +696,56 @@ void print_symbol_table_8(listNode* startPos)
 
 int parse_integer(char* string, int* integer)
 {
-    // check if they are all digits
+    // find the length of the string
+
     int stringLength = 0;
     while (string[stringLength] != '\0')
     {
-        if (string[stringLength] < 48 || string[stringLength] > 57)
+        stringLength++;
+    }
+
+    // check for a base
+
+    int base = 10;
+    if (stringLength > 2)
+    {
+        if (string[0] == '0')
+        {
+            if (string[1] == 'b' || string[1] == 'B')
+            {
+                base = 2;
+            }
+            else if (string[1] == 'x' || string[1] == 'X')
+            {
+                base = 16;
+            }
+            else
+            {
+                base = 8;
+            }
+        }
+    }
+
+    // check if they are all digits
+
+    for (int character = 0; character < stringLength; character++)
+    {
+        if (string[character] < 48 || string[character] > 57 && !(character == 1 && (base == 2 || base == 16)))
         {
             return -1;
         }
-        stringLength++;
     }
     for (int digit = 0; digit < stringLength; digit++)
     {
-        int newBit = string[digit] - 48;
-        for (int power = 0; power < stringLength - digit - 1; power++)
+        if (string[digit] > 48 && string[digit] <= 57)
         {
-            newBit *= 10;
+            int newBit = string[digit] - 48;
+            for (int power = 0; power < stringLength - digit - 1; power++)
+            {
+                newBit *= base;
+            }
+            *integer += newBit;
         }
-        *integer += newBit;
     }
 
     return 0;
